@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
-# I'm not sure I want to keep this
 class Customer < ApplicationRecord
   has_one :storage_box
+
+  has_many :rate_adjustments
 end

@@ -4,7 +4,8 @@ require 'rails_helper'
 
 describe Api::StorageBoxController do
   describe 'rspec' do
-    let(:customer) { FactoryBot.create(:customer) } 
+    let(:customer) { FactoryBot.create(:customer) }
+    let(:flat_rate) { CostCalculatorService::FLAT_RATE }
     let(:items) do
       [
         {
@@ -25,8 +26,22 @@ describe Api::StorageBoxController do
       ]
     end
 
-    it 'performs all the calculations' do
-      CostCalculatorService.new(customer_id: customer.id, items: items)
+    it 'charges the flat rate' do
+      rate = CostCalculatorService.new(customer_id: customer.id, items: items).perform
+      expect(rate).to eql(flat_rate)
     end
+
+    it 'calculates a discount' do
+      discount = 10
+      expected = flat_rate - flat_rate * (discount.to_f / 100)
+      customer
+
+      customer.rate_adjustments << FactoryBot.create(:rate_adjustment, adjustment_type: 'flat_discount', value: discount, customer_id: customer.id)
+      rate = CostCalculatorService.new(customer_id: customer.id, items: items).perform
+
+      expect(rate).to eql(expected)
+    end
+
+    it 'calculates a fee'
   end
 end

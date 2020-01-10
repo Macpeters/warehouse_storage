@@ -1,5 +1,6 @@
-# frozen_string_literal: true 
+# frozen_string_literal: true
 
+# Use the customer's rate_adjustments to calculate the final rate
 class CostCalculatorService
   FLAT_RATE = 20
 
@@ -10,18 +11,14 @@ class CostCalculatorService
   end
 
   def perform
-    calculate_discounts
-    calculate_added_fees
-    rate
-  end
-
-  private
-
-  def calculate_discounts
-    # for each customer.discount, adjust the rate
-  end
-
-  def calculate_added_fees
-    # for each customer.fee, adjust the rate
+    @customer.rate_adjustments.each do |rate_adjustment|
+      @rate = RateAdjustment.send(
+        "calculate_#{rate_adjustment.adjustment_type}",
+        @rate,
+        @items,
+        rate_adjustment
+      )
+    end
+    @rate
   end
 end
