@@ -4,11 +4,11 @@ require 'rails_helper'
 
 describe Api::StorageBoxController, type: :controller do
   describe 'rspec' do
-    it 'runs a test' do
+    xit 'runs a test' do
       expect('hi').to eql('hi')
     end
 
-    it 'fails a test' do
+    xit 'fails a test' do
       expect('hi').to eql('bye')
     end
   end
