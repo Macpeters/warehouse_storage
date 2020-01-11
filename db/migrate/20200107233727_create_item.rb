@@ -7,6 +7,8 @@ class CreateItem < ActiveRecord::Migration[6.0]
       t.integer :width
       t.integer :value
 
+      t.integer :storage_box_id
+
       t.timestamps
     end
   end

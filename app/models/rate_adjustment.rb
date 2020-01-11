@@ -2,7 +2,7 @@
 
 # discounts or added fees given to specific customers
 class RateAdjustment < ApplicationRecord
-  belongs_to :customer
+  belongs_to :adjustable, polymorphic: true
 
   ADJUSTMENT_TYPES = %i[
     bulk_item_discount
@@ -24,14 +24,12 @@ class RateAdjustment < ApplicationRecord
 
   # Customer A will receive a 10% discount.
   def self.calculate_flat_discount(rate, _items, rate_adjustment)
-    discount = rate * rate_adjustment.value.to_f / 100
-    rate - discount
+    rate - percentage_value(rate, rate_adjustment)
   end
 
   # Customer C is to be charged 5% of the value of the item being stored.
-  def self.calculate_value_fee
-    # charge value% of value of item
-    # TODO: A single item, or all items?
+  def self.calculate_item_value_fee(rate, item, rate_adjustment)
+    rate + percentage_value(item.value, rate_adjustment)
   end
 
   # Client D will have a # 5% discount for the first 100 items stored, 10% discount for the next 100, and then 15% on each additional item,
@@ -41,5 +39,9 @@ class RateAdjustment < ApplicationRecord
 
   def self.item_volume(item)
     item.length * item.height * item.width
+  end
+
+  def self.percentage_value(value, rate_adjustment)
+    value * rate_adjustment.value.to_f / 100
   end
 end

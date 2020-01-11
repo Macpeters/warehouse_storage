@@ -1,3 +1,21 @@
+# Getting Started
+This is a basic rails app, and doesn't require anything special to get it running.
+
+### Install the app
+```
+bundle install
+bundle exec rake db:migrate
+
+```
+
+### Run the app
+``` bundle exec rails s  ```
+
+### Run the tests
+```  bundle exec rspec spec ```
+
+
+
 # Problem
 
 We would like to provide our sales team a way to customize warehouse storage pricing for our customers.
@@ -46,14 +64,7 @@ Please package the project into a single zip file. Please upload this zip to you
 
 
 # TODO
-* add a rate_adjustment model, customer has_many rate_adjustments.  Calc for that rate_type is stored in the RateAdjustment Model.
+* add a rate_adjustment model, customer has_many rate_adjustments.  Calc for each adjustment_type is stored in the RateAdjustment Model.  
 
-```
-{
-  customer_id: 2,
-  discount: true,
-  adjustment_type: 'large_item'
-}
-
-```
-
+* validate method calls
+* validate adjustment_types are in the list

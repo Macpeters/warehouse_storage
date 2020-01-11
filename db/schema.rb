@@ -23,13 +23,14 @@ ActiveRecord::Schema.define(version: 2020_01_10_103510) do
     t.integer "height"
     t.integer "width"
     t.integer "value"
+    t.integer "storage_box_id"
     t.datetime "created_at", precision: 6, null: false
     t.datetime "updated_at", precision: 6, null: false
   end
 
   create_table "rate_adjustments", force: :cascade do |t|
-    t.integer "customer_id"
-    t.boolean "discount"
+    t.integer "adjustable_id"
+    t.string "adjustable_type"
     t.string "adjustment_type"
     t.integer "value"
     t.datetime "expire_date"
