@@ -6,10 +6,10 @@ class RateAdjustment < ApplicationRecord
   has_one :rate_adjustment_threshold, dependent: :destroy
 
   ADJUSTMENT_TYPES = %w[
-    bulk_item_discount # threshold required
     bulk_items_discount # threshold required
     large_items_fee # threshold required
     flat_discount
+    bulk_item_discount # threshold required
     heavy_item_fee
     large_item_fee
     item_value_fee

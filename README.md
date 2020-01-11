@@ -58,28 +58,28 @@ Write an endpoint which will quote any customer with the expected price given n 
 ]
 ```
 
-## Before Completion
-Add documentation on how to make the API calls
-Please package the project into a single zip file. Please upload this zip to your own google docs or dropbox etc and provide a link in your follow up email.
-
-
-# TODO
-* add a rate_adjustment model, customer has_many rate_adjustments.  Calc for each adjustment_type is stored in the RateAdjustment Model.
-
-* validate method calls
-* validate adjustment_types are in the list
+### Before Completion
+* Add documentation on how to make the API calls
+* Please package the project into a single zip file. Please upload this zip to your own google docs or dropbox etc and provide a link in your follow up email.
 
 
 
 # Solution
 
 ## JSON Format
+ * items with no id are new
+ * items with id are updated
+ * 'delete' => 'true' will remove an item from storage
+
 ```
 
 {
   'customer_id' => '1234',
   'adjustments' => [
-
+    {
+      'adjustment_type' => 'flat_discount'
+      'value' => '5'
+    }
   ]
   'items' => [
     {
@@ -89,9 +89,8 @@ Please package the project into a single zip file. Please upload this zip to you
       'height' => '6',
       'width' => '300',
       'value' => '1000',
-      'adjustments' => [
-
-      ]
+      'adjustments' => [],
+      'delete' => 'true',
     },
     {
       'name' => 'sofa',
@@ -100,7 +99,16 @@ Please package the project into a single zip file. Please upload this zip to you
       'width' => '3',
       'weight' => '100',
       'value' => '300',
-      'adjustments' => []
+      'adjustments' => [
+        {
+          'adjustment_type' => 'bulk_item_discount'
+          'value' => '2',
+          'threshold' => {
+            'min_value' => 0,
+            'max_value' => 100
+          }
+        }
+      ]
     }
   ]
 }
