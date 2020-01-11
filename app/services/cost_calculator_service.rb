@@ -1,28 +1,39 @@
 # frozen_string_literal: true
 
-# Use the rate_adjustments associated with the customer, as well as with
-# each item to calculate the final rate.
+# Find the monthly rate for the customer by calculating the flat rate 
+# along with any customer and item level rate_adjustments
 class CostCalculatorService
   FLAT_RATE = 20
 
   def initialize(params)
     @customer = Customer.find(params[:customer_id])
-    @rate = FLAT_RATE
   end
 
   def perform
-    items = @customer.storage_box&.items
+    @items = @customer.storage_box&.items
+    return nil unless @items.present?
 
+    @rate = @items.count * FLAT_RATE
+
+    calculate_customer_level_adjustments
+    calculate_item_level_adjustments
+
+    @rate
+  end
+
+  def calculate_customer_level_adjustments
     customer_rate_adjustments.each do |rate_adjustment|
       @rate = RateAdjustment.send(
         "calculate_#{rate_adjustment.adjustment_type}",
         @rate,
-        items,
+        @items,
         rate_adjustment
       )
     end
+  end
 
-    items&.each do |item|
+  def calculate_item_level_adjustments
+    @items&.each do |item|
       item_rate_adjustments(item).each do |rate_adjustment|
         @rate = RateAdjustment.send(
           "calculate_#{rate_adjustment.adjustment_type}",
@@ -32,8 +43,6 @@ class CostCalculatorService
         )
       end
     end
-
-    @rate
   end
 
   def item_rate_adjustments(item_id)

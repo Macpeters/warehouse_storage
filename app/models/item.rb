@@ -3,4 +3,8 @@
 # Items are handled by the StorageBox
 class Item < ApplicationRecord
   belongs_to :storage_box
+
+  def volume
+    length.to_i * height.to_i * width.to_i
+  end
 end

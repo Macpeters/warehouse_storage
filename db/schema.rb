@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 2020_01_10_103510) do
+ActiveRecord::Schema.define(version: 2020_01_11_171402) do
 
   create_table "customers", force: :cascade do |t|
     t.datetime "created_at", precision: 6, null: false
@@ -24,6 +24,14 @@ ActiveRecord::Schema.define(version: 2020_01_10_103510) do
     t.integer "width"
     t.integer "value"
     t.integer "storage_box_id"
+    t.datetime "created_at", precision: 6, null: false
+    t.datetime "updated_at", precision: 6, null: false
+  end
+
+  create_table "rate_adjustment_thresholds", force: :cascade do |t|
+    t.integer "rate_adjustment_id"
+    t.integer "min_value"
+    t.integer "max_value"
     t.datetime "created_at", precision: 6, null: false
     t.datetime "updated_at", precision: 6, null: false
   end

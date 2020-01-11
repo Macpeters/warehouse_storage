@@ -2,13 +2,19 @@
 
 require 'rails_helper'
 
-describe Api::StorageBoxController do
+describe CostCalculatorService do
   describe 'rspec' do
     let(:customer) { FactoryBot.create(:customer) }
     let(:storage_box) { FactoryBot.create(:storage_box, customer: customer) }
     let(:flat_rate) { CostCalculatorService::FLAT_RATE }
 
+    it 'charges nothing if no items are stored' do
+      rate = CostCalculatorService.new(customer_id: customer.id).perform
+      expect(rate).to eql(nil)
+    end
+    
     it 'charges the flat rate' do
+      FactoryBot.create(:item, value: 100, storage_box: storage_box)
       rate = CostCalculatorService.new(customer_id: customer.id).perform
       expect(rate).to eql(flat_rate)
     end
@@ -17,6 +23,7 @@ describe Api::StorageBoxController do
       discount = 10
       expected = flat_rate - flat_rate * (discount.to_f / 100)
       customer
+      FactoryBot.create(:item, value: 100, storage_box: storage_box)
       
       FactoryBot.create(:rate_adjustment, adjustment_type: 'flat_discount', value: discount, adjustable_id: customer.id, adjustable_type: 'Customer')
       rate = CostCalculatorService.new(customer_id: customer.id).perform
