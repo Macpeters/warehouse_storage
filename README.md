@@ -65,6 +65,14 @@ Write an endpoint which will quote any customer with the expected price given n 
 
 
 # Solution
+### Index - get a list of customers and their storage_boxes NOT IMPLEMENTED
+``` GET .../api/storage_boxes(.:format) ```
+### Create a new customer
+``` POST .../api/storage_boxes(.:format) ```
+### Show - get the items stored by a customer.  Requires storage_box.id
+``` GET .../api/storage_boxes/:id(.:format) ```
+### Update - add/remove/update items stored by a customer. Requires storage_box.id
+``` PATCH  /api/storage_boxes/:id(.:format) ```
 
 ## JSON Format
  * items with no id are new
@@ -118,7 +126,7 @@ Write an endpoint which will quote any customer with the expected price given n 
 ## Flat Rate Fee
 All customers will be charged a flat rate of $20 per item stored
 
-## Special Adjustments
+## Special Pricing Adjustments
 These are adjustments that can be added/removed in order to customize storage pricing for the customer.
 The value is the amount that will be discounted or added onto the fee.
 There are a number of adjustments available which will have different effects on the pricing.

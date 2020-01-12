@@ -5,16 +5,21 @@ class RateAdjustment < ApplicationRecord
   belongs_to :adjustable, polymorphic: true
   has_one :rate_adjustment_threshold, dependent: :destroy
 
+  # Threshold required for
+    # bulk_items_discount
+    # heavy_items_fee
+    # large_items_fee
   ADJUSTMENT_TYPES = %w[
-    bulk_items_discount # threshold required
-    heavy_items_fee # threshold required
-    large_items_fee # threshold required
+    bulk_items_discount
+    heavy_items_fee
+    large_items_fee
     flat_discount
-    bulk_item_discount # threshold required
     heavy_item_fee
     large_item_fee
     item_value_fee
   ].freeze
+
+
 
   # TODO: validate 2 different lists based on adjustable_type to avoid bulk adjustments on single items
   # or update the calcs to handle those cases

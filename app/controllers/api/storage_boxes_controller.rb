@@ -4,6 +4,18 @@
 # All methods will return the items and fees
 class Api::StorageBoxesController < Api::BaseController
   def update
+    @storage_box = StorageBox.find_by(params['id'])
+    return render json: { error: "This storage box doesn't exist" }.to_json, status: 404 if @storage_box.blank?
+
+    customer = @storage_box.customer
+    # The customer level rate_adjustments
+    params['adjustments'].each do |adjustment_attributes|
+      create_or_update_rate_adjustment(adjustment_attributes, 'Customer', customer.id)
+    end
+
+    params['items'].each do |item_attributes|
+      create_or_update_item(item_attributes, @storage_box)
+    end
   end
 
   def create
@@ -16,22 +28,11 @@ class Api::StorageBoxesController < Api::BaseController
 
     # The customer level rate_adjustments
     params['adjustments'].each do |adjustment_attributes|
-      rate_adjustment = create_rate_adjustment(adjustment_attributes, 'Customer', customer.id)
-      next unless adjustment_attributes['threshold']
-
-      create_rate_adjustment_threshold(adjustment_attributes['threshold'], rate_adjustment)
+      create_or_update_rate_adjustment(adjustment_attributes, 'Customer', customer.id)
     end
 
     params['items'].each do |item_attributes|
-      item = create_item(item_attributes, customer.storage_box)
-      next unless item_attributes['adjustments']
-
-      item_attributes['adjustments'].each do |adjustment_attributes|
-        rate_adjustment = create_rate_adjustment(adjustment_attributes, 'Item', item.id)
-        next unless adjustment_attributes['threshold']
-
-        create_rate_adjustment_threshold(adjustment_attributes['threshold'], rate_adjustment)
-      end
+      create_or_update_item(item_attributes, customer.storage_box)
     end
     # TODO: collect and return any validation errors
 
@@ -42,39 +43,79 @@ class Api::StorageBoxesController < Api::BaseController
 
   def show
     @storage_box = StorageBox.find_by(params['id'])
-    return render json: { error: "This storage box doesn't exist"}.to_json, status: 404 if @storage_box.blank?
+    return render json: { error: "This storage box doesn't exist" }.to_json, status: 404 if @storage_box.blank?
   end
 
   private
 
-  # TODO: use item_params instead of hard-coding these
-  def create_item(item_attributes, storage_box)
-    Item.create(
+  # TODO: Break these out into a service or something
+  def create_or_update_item(item_attributes, storage_box)
+    item = Item.find_by(item_attributes['id']) if item_attributes['id']
+
+    # TODO: destroy item if item_attributes['delete'] == 'true'
+
+    if item.blank?
+      item = Item.create(item_params(item_attributes, storage_box))
+    else
+      item.update(item_params(item_attributes, storage_box))
+    end
+
+    return unless item_attributes['adjustments']
+
+    item_attributes.dig('adjustments').each do |adjustment_attributes|
+      create_or_update_rate_adjustment(adjustment_attributes, 'Item', item.id)
+    end
+  end
+
+  def create_or_update_rate_adjustment(adjustment_attributes, adjusted_type, adjusted_id)
+    rate_adjustment = RateAdjustment.find_by(adjustment_attributes['id']) if adjustment_attributes['id']
+
+    # TODO: destroy rate_adjustment if adjustment_attributes['delete'] == 'true'
+
+    if rate_adjustment.blank?
+      rate_adjustment = RateAdjustment.create(rate_adjustment_params(adjustment_attributes, adjusted_type, adjusted_id))
+    else
+      rate_adjustment.update(rate_adjustment_params(adjustment_attributes, rate_adjustment.adjustable_type, rate_adjustment.adjustable_id))
+    end
+    return unless adjustment_attributes['threshold'] || rate_adjustment.rate_adjustment_threshold
+
+    create_or_update_rate_adjustment_threshold(adjustment_attributes['threshold'], rate_adjustment)
+  end
+
+  def create_or_update_rate_adjustment_threshold(threshold_attributes, rate_adjustment)
+    if rate_adjustment.rate_adjustment_threshold
+      RateAdjustmentThreshold.update(rate_adjustment_threshold_params(threshold_attributes, rate_adjustment))
+    else
+      RateAdjustmentThreshold.create(rate_adjustment_threshold_params(threshold_attributes, rate_adjustment))
+    end
+  end
+
+  def item_params(item_attributes, storage_box)
+    {
       name: item_attributes['name'],
       length: item_attributes['length'],
       width: item_attributes['width'],
       height: item_attributes['height'],
       weight: item_attributes['weight'],
       storage_box: storage_box
-    )
+    }
   end
 
-  # TODO: use rate_adjustment_params instead of hard-coding these
-  def create_rate_adjustment(adjustment_attributes, adjusted_type, adjusted_id)
-    RateAdjustment.create(
-      adjustment_type: adjustment_attributes['adjustment_type'],
-      value: adjustment_attributes['value'],
-      adjustable_type: adjusted_type,
-      adjustable_id: adjusted_id
-    )
-  end
-
-  def create_rate_adjustment_threshold(threshold_attributes, rate_adjustment)
-    RateAdjustmentThreshold.create(
+  def rate_adjustment_threshold_params(threshold_attributes, rate_adjustment)
+    {
       min_value:  threshold_attributes['min_value'],
       max_value: threshold_attributes['max_value'],
       rate_adjustment: rate_adjustment
-    )
+    }
+  end
+
+  def rate_adjustment_params(attributes, adjusted_type, adjusted_id)
+    {
+      adjustment_type: attributes['adjustment_type'],
+      value: attributes['value'],
+      adjustable_type: adjusted_type,
+      adjustable_id: adjusted_id
+    }
   end
 
   def storage_box_params
