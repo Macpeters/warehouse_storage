@@ -36,7 +36,7 @@ describe RateAdjustment do
         FactoryBot.create(:item, length: 100, width: 100, height: 100),
         FactoryBot.create(:item, length: 75, width: 75, height: 75)
       ]
-      rate_adjustment = FactoryBot.create(:rate_adjustment, value: 1, adjustable_id: customer.id, adjustable_type: 'Customer', adjustment_type: 'bulk_items_discount')
+      rate_adjustment = FactoryBot.create(:rate_adjustment, value: 1, adjustable_id: customer.id, adjustable_type: 'Customer', adjustment_type: 'large_items_fee')
       FactoryBot.create(:rate_adjustment_threshold, min_value: nil, max_value: 50, rate_adjustment: rate_adjustment)
 
       expected = flat_rate + (rate_adjustment.value * items.count)
@@ -50,7 +50,7 @@ describe RateAdjustment do
         FactoryBot.create(:item, length: 100, width: 100, height: 100),
         FactoryBot.create(:item, length: 1, width: 1, height: 1)
       ]
-      rate_adjustment = FactoryBot.create(:rate_adjustment, value: 1, adjustable_id: customer.id, adjustable_type: 'Customer', adjustment_type: 'bulk_items_discount')
+      rate_adjustment = FactoryBot.create(:rate_adjustment, value: 1, adjustable_id: customer.id, adjustable_type: 'Customer', adjustment_type: 'large_items_fee')
       FactoryBot.create(:rate_adjustment_threshold, min_value: nil, max_value: 50, rate_adjustment: rate_adjustment)
 
       expected = flat_rate + rate_adjustment.value
@@ -61,17 +61,73 @@ describe RateAdjustment do
   end
 
   describe 'calculate_bulk_items_discount' do
-    it 'calculates a fee for the first 100 items'
-    it 'calculates a fee for the second 100 items'
-    it 'calculates a fee for each additional item past 200 items'
+    it 'calculates a fee for the first 500 items' do
+      items = FactoryBot.build_list(:item, 100)
+      base_rate = flat_rate * items.count
+      fee = 1
+      rate_adjustment = FactoryBot.create(:rate_adjustment, value: fee, adjustable_id: customer.id, adjustable_type: 'Customer', adjustment_type: 'bulk_items_discount')
+      FactoryBot.create(:rate_adjustment_threshold, min_value: 0, max_value: 49, rate_adjustment: rate_adjustment)
+
+      expected = base_rate - 50 * fee
+      expect(RateAdjustment.calculate_bulk_items_discount(base_rate, items, rate_adjustment)).to eql(expected)
+    end
+
+    it 'calculates a fee for the second 20 items' do
+      items = FactoryBot.build_list(:item, 50)
+      base_rate = flat_rate * items.count
+      fee = 1
+      rate_adjustment = FactoryBot.create(:rate_adjustment, value: fee, adjustable_id: customer.id, adjustable_type: 'Customer', adjustment_type: 'bulk_items_discount')
+      FactoryBot.create(:rate_adjustment_threshold, min_value: 20, max_value: 39, rate_adjustment: rate_adjustment)
+
+      expected = base_rate - 20 * fee
+      expect(RateAdjustment.calculate_bulk_items_discount(base_rate, items, rate_adjustment)).to eql(expected)
+    end
+
+    it 'calculates a fee for each additional item past 50 items' do
+      items = FactoryBot.build_list(:item, 80)
+      base_rate = flat_rate * items.count
+      fee = 1
+      rate_adjustment = FactoryBot.create(:rate_adjustment, value: fee, adjustable_id: customer.id, adjustable_type: 'Customer', adjustment_type: 'bulk_items_discount')
+      FactoryBot.create(:rate_adjustment_threshold, min_value: 50, max_value: nil, rate_adjustment: rate_adjustment)
+
+      expected = base_rate - 30 * fee
+      expect(RateAdjustment.calculate_bulk_items_discount(base_rate, items, rate_adjustment)).to eql(expected)
+    end
   end
 
-  describe 'heavy_items_fee' do
-    it 'calculates a fee based on the weight of the item'
+  describe 'calculate_heavy_items_fee' do
+    it 'calculates a fee based on the weight of any item above a weight threshold' do
+      items = FactoryBot.build_list(:item, 10, weight: 200)
+      fee = 1
+      rate_adjustment = FactoryBot.create(:rate_adjustment, value: fee, adjustable_id: customer.id, adjustable_type: 'Customer', adjustment_type: 'heavy_items_fee')
+      FactoryBot.create(:rate_adjustment_threshold, min_value: 0, max_value: 150, rate_adjustment: rate_adjustment)
+
+      expected = flat_rate + (rate_adjustment.value * items.count)
+      expect(RateAdjustment.calculate_heavy_items_fee(flat_rate, items, rate_adjustment)).to eql(expected)
+    end
+
+    it 'doesnt add a fee for items that dont exeed the threshold' do
+      items = FactoryBot.build_list(:item, 10, weight: 200)
+      items << FactoryBot.create(:item, weight: 25)
+
+      fee = 1
+      rate_adjustment = FactoryBot.create(:rate_adjustment, value: fee, adjustable_id: customer.id, adjustable_type: 'Customer', adjustment_type: 'heavy_items_fee')
+      FactoryBot.create(:rate_adjustment_threshold, min_value: 0, max_value: 150, rate_adjustment: rate_adjustment)
+
+      expected = flat_rate + (rate_adjustment.value * items.count - 1)
+      expect(RateAdjustment.calculate_heavy_items_fee(flat_rate, items, rate_adjustment)).to eql(expected)
+    end
   end
 
-  describe 'heavy_item_fee' do
-    it 'calculates a fee based on the weight of the item'
+  describe 'calculate_heavy_item_fee' do
+    it 'calculates a fee based on the weight of the item' do
+      fee = 2
+      item = FactoryBot.create(:item, weight: 200)
+      expected = flat_rate + item.weight * fee
+      rate_adjustment = FactoryBot.create(:rate_adjustment, adjustment_type: 'heavy_item_fee', value: fee, adjustable_id: item.id, adjustable_type: 'Item')
+
+      expect(RateAdjustment.calculate_heavy_item_fee(flat_rate, item, rate_adjustment)).to eql(expected)
+    end
   end
 
   describe 'calculate_item_value_fee' do
@@ -88,9 +144,14 @@ describe RateAdjustment do
   end
 
   describe 'calculate_large_item_fee' do
-    it 'calculates a fee based on the volume of the item and the rate_adjustment'
-    it 'requires width, height, and length values to be non-nil'
-    it 'only adds the fee when items are above a threshold volume'
+    it 'calculates a fee based on the volume of the item and the rate_adjustment' do
+      fee = 2
+      item = FactoryBot.create(:item, length: 20, width: 20, height: 20)
+      expected = flat_rate + item.volume * fee
+      rate_adjustment = FactoryBot.create(:rate_adjustment, adjustment_type: 'large_item_fee', value: fee, adjustable_id: item.id, adjustable_type: 'Item')
+
+      expect(RateAdjustment.calculate_large_item_fee(flat_rate, item, rate_adjustment)).to eql(expected)
+    end
   end
 
   describe 'percentage_value' do

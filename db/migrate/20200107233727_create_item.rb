@@ -6,6 +6,7 @@ class CreateItem < ActiveRecord::Migration[6.0]
       t.integer :height
       t.integer :width
       t.integer :value
+      t.integer :weight
 
       t.integer :storage_box_id
 

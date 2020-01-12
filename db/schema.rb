@@ -23,6 +23,7 @@ ActiveRecord::Schema.define(version: 2020_01_11_171402) do
     t.integer "height"
     t.integer "width"
     t.integer "value"
+    t.integer "weight"
     t.integer "storage_box_id"
     t.datetime "created_at", precision: 6, null: false
     t.datetime "updated_at", precision: 6, null: false

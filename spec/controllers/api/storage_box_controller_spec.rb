@@ -22,7 +22,7 @@ describe Api::StorageBoxController, type: :controller do
   #     }
   #   ]
   # end
-  
+
   describe 'rspec' do
     xit 'runs a test' do
       expect('hi').to eql('hi')

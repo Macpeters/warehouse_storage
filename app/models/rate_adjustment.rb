@@ -7,6 +7,7 @@ class RateAdjustment < ApplicationRecord
 
   ADJUSTMENT_TYPES = %w[
     bulk_items_discount # threshold required
+    heavy_items_fee # threshold required
     large_items_fee # threshold required
     flat_discount
     bulk_item_discount # threshold required
@@ -29,15 +30,28 @@ class RateAdjustment < ApplicationRecord
     rate
   end
 
-  def self.heavy_items_fee(rate, item, rate_adjustment)
+  def self.calculate_heavy_items_fee(rate, items, rate_adjustment)
+    threshold = rate_adjustment.rate_adjustment_threshold.max_value
+    items.each do |item|
+      rate += rate_adjustment.value if item.weight > threshold
+    end
+
+    rate
   end
 
   # Client D will have a # 5% discount for the first 100 items stored, 10% discount for the next 100,
   # and then 15% on each additional item,
   def self.calculate_bulk_items_discount(rate, items, rate_adjustment)
-    # get the rate_adjustment thresholds
-    # if no threshold, all items get the same bulk discount.
-    # for each threshold, calculate the discount
+    discount = 0
+    if rate_adjustment.rate_adjustment_threshold.max_value.present?
+      items_count = items[rate_adjustment.rate_adjustment_threshold.min_value..rate_adjustment.rate_adjustment_threshold.max_value].count
+    else
+      # with no upper limit, the rule applies to all items above the min_value
+      items_count = items.count - rate_adjustment.rate_adjustment_threshold.min_value
+    end
+
+    items_count.times { discount += rate_adjustment.value }
+    rate - discount
   end
 
   # Customer A will receive a 10% discount.
@@ -57,7 +71,8 @@ class RateAdjustment < ApplicationRecord
     rate + rate_adjustment.value * item.volume
   end
 
-  def self.heavy_item_fee(rate, item, rate_adjustment)
+  def self.calculate_heavy_item_fee(rate, item, rate_adjustment)
+    rate + rate_adjustment.value * item.weight
   end
 
   # HELPERS
