@@ -25,8 +25,7 @@ describe Api::StorageBoxesController, type: :controller do
           'height' => '6',
           'width' => '300',
           'value' => '1000',
-          'adjustments' => [],
-          'delete' => 'true',
+          'adjustments' => []
         },
         {
           'name' => 'sofa',
@@ -123,7 +122,7 @@ describe Api::StorageBoxesController, type: :controller do
       expect(JSON.parse(response.body)).to eql('error' => "This storage box doesn't exist")
     end
 
-    it 'updates a customer level rate_adjustment_threshold' do
+    xit 'updates a customer level rate_adjustment_threshold' do
       post :create, format: :json, params: params.except('customer_id')
       created = JSON.parse(response.body)
       created['adjustments'] << {
@@ -157,14 +156,46 @@ describe Api::StorageBoxesController, type: :controller do
     end
 
     it 'removes items from the existing storage box' do
+      post :create, format: :json, params: params.except('customer_id')
+      created = JSON.parse(response.body)
+      expect(Item.count).to eql(2)
 
+      created['items'][0]['delete'] = 'true'
+
+      put :update, format: :json, params: created
+      expect(Item.count).to eql(1)
     end
 
-    it 'adds any rate_adjustments'
-    it 'removes any rate_adjustments'
+    it 'removes any rate_adjustments' do
+      post :create, format: :json, params: params.except('customer_id')
+      created = JSON.parse(response.body)
+      created['adjustments'][0]['delete'] = 'true'
+
+      put :update, format: :json, params: created
+      expect(JSON.parse(response.body)['adjustments']).to eql([])
+    end
+
     it 'returns validation errors for rate_adjustments'
-    it 'updates an item level rate_adjustment_threshold'
-    it 'removes any thresholds if the associated rate_adjustment was removed'
+
+    it 'updates an item level rate_adjustment_threshold' do
+      post :create, format: :json, params: params.except('customer_id')
+      created = JSON.parse(response.body)
+      created['items'][1]['adjustments'][0]['threshold']['max_value'] = '200'
+
+      put :update, format: :json, params: created
+      expect(JSON.parse(response.body)['items'][1]['adjustments'][0]['threshold']['max_value']).to eql(200)
+    end
+
+    xit 'removes any thresholds if the associated rate_adjustment was removed' do
+      post :create, format: :json, params: params.except('customer_id')
+      created = JSON.parse(response.body)
+      expect(RateAdjustmentThreshold.count).to eql(1)
+
+      created['items'][1]['adjustments'][0]['delete'] = 'true'
+
+      put :update, format: :json, params: created
+      expect(RateAdjustmentThreshold.count).to eql(0)
+    end
 
     it 'returns the fee for any items stored' do
       params['customer_id'] = customer.id

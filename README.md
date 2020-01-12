@@ -77,7 +77,7 @@ Write an endpoint which will quote any customer with the expected price given n 
 ## JSON Format
  * items with no id are new
  * items with id are updated
- * 'delete' => 'true' will remove an item from storage
+ * 'delete' => 'true' will remove an item from storage or delete a rate_adjustment
 
 ```
 
@@ -136,22 +136,20 @@ Multiple adjustments can be added to the customer and/or individual item
 These are fees/disounts that can apply to all items, or to the overall rate being charged.
 Some Adjustments require a threshold.
 
-#### bulk_item_discount
-  * min and max threshold are required
+#### bulk_item_discount - min and max threshold are Required
   * all items numbering between the min/max will be discounted the adustment value
 
-#### bulk_items_discount
-  * min and max threshold are required
+#### bulk_items_discount - min and max threshold are Required
   * to add a discount to the first 100 items stored, use min=1, max=100
   * to add a discount to the second 100 items stored, use min=101, max=200
 
 #### flat_discount
   * the value will be applied as a percentage discount to the entire rate.  Use this to give the customer 5% off their rate for a month.  Set the expiry date
 
-#### heavy_items_fee # max threshold required
+#### heavy_items_fee - max threshold Required
   * all items with a weight exceeeding the max threshold will add an extra fee equal to the adjustment value
 
-#### large_items_fee # max threshold required
+#### large_items_fee - max threshold Required
   * all items with a volume exceeding the max threshold will add an extra fee equal to the adjustment value
 
 

@@ -16,6 +16,8 @@ class Api::StorageBoxesController < Api::BaseController
     params['items'].each do |item_attributes|
       create_or_update_item(item_attributes, @storage_box)
     end
+
+    @storage_box.reload
   end
 
   def create
@@ -52,14 +54,14 @@ class Api::StorageBoxesController < Api::BaseController
   def create_or_update_item(item_attributes, storage_box)
     item = Item.find_by(item_attributes['id']) if item_attributes['id']
 
-    # TODO: destroy item if item_attributes['delete'] == 'true'
-
     if item.blank?
       item = Item.create(item_params(item_attributes, storage_box))
+    elsif item_attributes['delete'] == 'true'
+      item.destroy
     else
       item.update(item_params(item_attributes, storage_box))
     end
-
+    return if item_attributes['delete'] == 'true'
     return unless item_attributes['adjustments']
 
     item_attributes.dig('adjustments').each do |adjustment_attributes|
@@ -69,22 +71,25 @@ class Api::StorageBoxesController < Api::BaseController
 
   def create_or_update_rate_adjustment(adjustment_attributes, adjusted_type, adjusted_id)
     rate_adjustment = RateAdjustment.find_by(adjustment_attributes['id']) if adjustment_attributes['id']
-
-    # TODO: destroy rate_adjustment if adjustment_attributes['delete'] == 'true'
-
     if rate_adjustment.blank?
       rate_adjustment = RateAdjustment.create(rate_adjustment_params(adjustment_attributes, adjusted_type, adjusted_id))
+    elsif adjustment_attributes['delete'] == 'true'
+      # this is supposed to happen automagically but isnt working
+      rate_adjustment&.rate_adjustment_threshold&.destroy!
+      rate_adjustment.destroy!
     else
       rate_adjustment.update(rate_adjustment_params(adjustment_attributes, rate_adjustment.adjustable_type, rate_adjustment.adjustable_id))
     end
-    return unless adjustment_attributes['threshold'] || rate_adjustment.rate_adjustment_threshold
+    return if adjustment_attributes['delete'] == 'true'
+    return unless adjustment_attributes['threshold']
 
     create_or_update_rate_adjustment_threshold(adjustment_attributes['threshold'], rate_adjustment)
   end
 
   def create_or_update_rate_adjustment_threshold(threshold_attributes, rate_adjustment)
-    if rate_adjustment.rate_adjustment_threshold
-      RateAdjustmentThreshold.update(rate_adjustment_threshold_params(threshold_attributes, rate_adjustment))
+    threshold = RateAdjustmentThreshold.find_by(threshold_attributes.dig('id'))
+    if threshold
+      threshold.update(rate_adjustment_threshold_params(threshold_attributes, threshold.rate_adjustment))
     else
       RateAdjustmentThreshold.create(rate_adjustment_threshold_params(threshold_attributes, rate_adjustment))
     end
