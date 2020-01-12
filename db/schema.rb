@@ -49,6 +49,7 @@ ActiveRecord::Schema.define(version: 2020_01_11_171402) do
 
   create_table "storage_boxes", force: :cascade do |t|
     t.integer "customer_id"
+    t.float "storage_fee"
     t.datetime "created_at", precision: 6, null: false
     t.datetime "updated_at", precision: 6, null: false
   end

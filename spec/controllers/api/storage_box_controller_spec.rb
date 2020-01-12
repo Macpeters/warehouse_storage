@@ -3,7 +3,10 @@
 require 'rails_helper'
 
 describe Api::StorageBoxesController, type: :controller do
+  render_views
+
   let(:customer) { FactoryBot.create(:customer) }
+  let(:storage_fee) { 38.0 }
   let(:params) do
     {
       'customer_id' => '1234',
@@ -33,7 +36,7 @@ describe Api::StorageBoxesController, type: :controller do
           'value' => '300',
           'adjustments' => [
             {
-              'adjustment_type' => 'bulk_item_discount',
+              'adjustment_type' => 'item_value_fee',
               'value' => '2',
               'threshold' => {
                 'min_value' => 0,
@@ -47,13 +50,18 @@ describe Api::StorageBoxesController, type: :controller do
   end
 
   describe 'create' do
+    it 'renders the view' do
+      params['customer_id'] = customer.id
+      post :create, format: :json, params: params
+      parsed = JSON.parse(response.body)
+      expect(parsed['customer_id']).to eql(customer.id)
+    end
+
     it 'creates a new customer if no customer_id is passed in' do
       expect(Customer.all.count).to eql(0)
       post :create, format: :json, params: params.except('customer_id')
       expect(Customer.all.count).to eql(1)
     end
-
-    it 'returns validation errors for the customer'
 
     it 'ensures an existing customer is found' do
       post :create, format: :json, params: params
@@ -72,13 +80,40 @@ describe Api::StorageBoxesController, type: :controller do
 
     it 'adds items to the new storage box' do
       customer
+      expect(Item.all.count).to eql(0)
       post :create, format: :json, params: params
+      expect(Item.all.count).to eql(params['items'].count)
     end
 
-    it 'adds any rate_adjustments'
+    it 'adds any rate_adjustments for the customer' do
+      params['customer_id'] = customer.id
+      post :create, format: :json, params: params
+
+      rate_adjustment = RateAdjustment.where(adjustable_type: 'Customer', adjustable_id: customer.id).first
+      expect(rate_adjustment.present?).to be true
+    end
+
+    it 'adds any rate_adjustments and thresholds for items' do
+      post :create, format: :json, params: params.except('customer_id')
+
+      sofa = Item.find_by(name: 'sofa')
+      rate_adjustment = RateAdjustment.where(adjustable_type: 'Item', adjustable_id: sofa.id).first
+      expect(rate_adjustment.rate_adjustment_threshold.present?).to be true
+    end
+
     it 'returns validation errors for rate_adjustments'
-    it 'adds any thresholds'
-    it 'returns the fee for any items stored'
+
+    it 'returns the fee for any items stored' do
+      customer
+      post :create, format: :json, params: params
+      expect(JSON.parse(response.body)['storage_fee']).to eql(storage_fee)
+    end
+
+    it 'returns the items stored' do
+      post :create, format: :json, params: params.except('customer_id')
+      parsed = JSON.parse(response.body)
+      expect(parsed['items'].count).to eql(params['items'].count)
+    end
   end
 
   describe 'update' do
@@ -95,7 +130,21 @@ describe Api::StorageBoxesController, type: :controller do
   end
 
   describe 'show' do
-    it 'returns the fee for any items stored'
-    it 'returns a json object with all the items stored and their rate_adjustments, thresholds, etc'
+    it 'validates the storage_box exists' do
+      get :show, format: :json, params: { id: 66 }
+      expect(JSON.parse(response.body))
+        .to eql('error' => "This storage box doesn't exist")
+    end
+
+    it 'returns the fee and any items stored' do
+      params['customer_id'] = customer.id
+      post :create, format: :json, params: params
+      customer.reload
+
+      get :show, format: :json, params: { id: customer.storage_box.id }
+      parsed = JSON.parse(response.body)
+      expect(parsed['storage_fee']).to eql(storage_fee)
+      expect(parsed['items'].count).to eql(params['items'].count)
+    end
   end
 end

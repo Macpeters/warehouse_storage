@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-# Find the monthly rate for the customer by calculating the flat rate 
+# Find the monthly rate for the customer by calculating the flat rate
 # along with any customer and item level rate_adjustments
 class CostCalculatorService
   FLAT_RATE = 20
@@ -10,7 +10,9 @@ class CostCalculatorService
   end
 
   def perform
-    @items = @customer.storage_box&.items
+    return nil unless @customer.storage_box.present?
+
+    @items = @customer.storage_box.items
     return nil unless @items.present?
 
     @rate = @items.count * FLAT_RATE
@@ -18,11 +20,12 @@ class CostCalculatorService
     calculate_customer_level_adjustments
     calculate_item_level_adjustments
 
+    @customer.storage_box.update(storage_fee: @rate)
     @rate
   end
 
   def calculate_customer_level_adjustments
-    customer_rate_adjustments.each do |rate_adjustment|
+    @customer.rate_adjustments.each do |rate_adjustment|
       @rate = RateAdjustment.send(
         "calculate_#{rate_adjustment.adjustment_type}",
         @rate,
@@ -34,7 +37,7 @@ class CostCalculatorService
 
   def calculate_item_level_adjustments
     @items&.each do |item|
-      item_rate_adjustments(item).each do |rate_adjustment|
+      item.rate_adjustments.each do |rate_adjustment|
         @rate = RateAdjustment.send(
           "calculate_#{rate_adjustment.adjustment_type}",
           @rate,
@@ -43,13 +46,5 @@ class CostCalculatorService
         )
       end
     end
-  end
-
-  def item_rate_adjustments(item_id)
-    RateAdjustment.where(adjustable_type: 'Item', adjustable_id: item_id)
-  end
-
-  def customer_rate_adjustments
-    RateAdjustment.where(adjustable_type: 'Customer', adjustable_id: @customer.id)
   end
 end

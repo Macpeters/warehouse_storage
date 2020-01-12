@@ -16,6 +16,8 @@ class RateAdjustment < ApplicationRecord
     item_value_fee
   ].freeze
 
+  # TODO: validate 2 different lists based on adjustable_type to avoid bulk adjustments on single items
+  # or update the calcs to handle those cases
   validates :adjustment_type, inclusion: { in: ADJUSTMENT_TYPES }
 
   # -----  Customer Level Adjustments affects multiple items --------
