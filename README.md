@@ -77,10 +77,10 @@ Write an endpoint which will quote any customer with the expected price given n 
   'customer_id' => '1234',
   'adjustments' => [
     {
-      'adjustment_type' => 'flat_discount'
+      'adjustment_type' => 'flat_discount',
       'value' => '5'
     }
-  ]
+  ],
   'items' => [
     {
       'id' => '242',
@@ -101,7 +101,7 @@ Write an endpoint which will quote any customer with the expected price given n 
       'value' => '300',
       'adjustments' => [
         {
-          'adjustment_type' => 'bulk_item_discount'
+          'adjustment_type' => 'bulk_item_discount',
           'value' => '2',
           'threshold' => {
             'min_value' => 0,
