@@ -122,7 +122,7 @@ describe Api::StorageBoxesController, type: :controller do
       expect(JSON.parse(response.body)).to eql('error' => "This storage box doesn't exist")
     end
 
-    xit 'updates a customer level rate_adjustment_threshold' do
+    it 'updates a customer level rate_adjustment_threshold' do
       post :create, format: :json, params: params.except('customer_id')
       created = JSON.parse(response.body)
       created['adjustments'] << {
@@ -186,7 +186,7 @@ describe Api::StorageBoxesController, type: :controller do
       expect(JSON.parse(response.body)['items'][1]['adjustments'][0]['threshold']['max_value']).to eql(200)
     end
 
-    xit 'removes any thresholds if the associated rate_adjustment was removed' do
+    it 'removes any thresholds if the associated rate_adjustment was removed' do
       post :create, format: :json, params: params.except('customer_id')
       created = JSON.parse(response.body)
       expect(RateAdjustmentThreshold.count).to eql(1)

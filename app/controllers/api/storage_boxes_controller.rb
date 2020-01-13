@@ -52,7 +52,7 @@ class Api::StorageBoxesController < Api::BaseController
 
   # TODO: Break these out into a service or something
   def create_or_update_item(item_attributes, storage_box)
-    item = Item.find_by(item_attributes['id']) if item_attributes['id']
+    item = Item.find_by(id: item_attributes['id']) if item_attributes['id']
 
     if item.blank?
       item = Item.create(item_params(item_attributes, storage_box))
@@ -70,12 +70,12 @@ class Api::StorageBoxesController < Api::BaseController
   end
 
   def create_or_update_rate_adjustment(adjustment_attributes, adjusted_type, adjusted_id)
-    rate_adjustment = RateAdjustment.find_by(adjustment_attributes['id']) if adjustment_attributes['id']
+    rate_adjustment = RateAdjustment.find_by(id: adjustment_attributes['id']) if adjustment_attributes['id']
+
     if rate_adjustment.blank?
       rate_adjustment = RateAdjustment.create(rate_adjustment_params(adjustment_attributes, adjusted_type, adjusted_id))
     elsif adjustment_attributes['delete'] == 'true'
-      # this is supposed to happen automagically but isnt working
-      rate_adjustment&.rate_adjustment_threshold&.destroy!
+      rate_adjustment.rate_adjustment_threshold&.destroy
       rate_adjustment.destroy!
     else
       rate_adjustment.update(rate_adjustment_params(adjustment_attributes, rate_adjustment.adjustable_type, rate_adjustment.adjustable_id))
@@ -87,7 +87,7 @@ class Api::StorageBoxesController < Api::BaseController
   end
 
   def create_or_update_rate_adjustment_threshold(threshold_attributes, rate_adjustment)
-    threshold = RateAdjustmentThreshold.find_by(threshold_attributes.dig('id'))
+    threshold = RateAdjustmentThreshold.find_by(id: threshold_attributes.dig('id'))
     if threshold
       threshold.update(rate_adjustment_threshold_params(threshold_attributes, threshold.rate_adjustment))
     else

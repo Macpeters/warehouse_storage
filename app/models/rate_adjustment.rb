@@ -19,14 +19,13 @@ class RateAdjustment < ApplicationRecord
     item_value_fee
   ].freeze
 
-  # TODO: validate 2 different lists based on adjustable_type to avoid bulk adjustments on single items
-  # or update the calcs to handle those cases
   validates :adjustment_type, inclusion: { in: ADJUSTMENT_TYPES }
 
   # -----  Customer Level Adjustments affects multiple items --------
 
   # Customer B stores large items, and will be charged at $1 per unit of volume.
   def self.calculate_large_items_fee(rate, items, rate_adjustment)
+    items = ensure_items_is_array(items)
     threshold = rate_adjustment.rate_adjustment_threshold.max_value
     items.each do |item|
       rate += rate_adjustment.value if item.volume > threshold
@@ -36,6 +35,7 @@ class RateAdjustment < ApplicationRecord
   end
 
   def self.calculate_heavy_items_fee(rate, items, rate_adjustment)
+    ensure_items_is_array(items)
     threshold = rate_adjustment.rate_adjustment_threshold.max_value
     items.each do |item|
       rate += rate_adjustment.value if item.weight > threshold
@@ -47,6 +47,7 @@ class RateAdjustment < ApplicationRecord
   # Client D will have a # 5% discount for the first 100 items stored, 10% discount for the next 100,
   # and then 15% on each additional item,
   def self.calculate_bulk_items_discount(rate, items, rate_adjustment)
+    ensure_items_is_array(items)
     discount = 0
     if rate_adjustment.rate_adjustment_threshold.max_value.present?
       items_count = items[rate_adjustment.rate_adjustment_threshold.min_value..rate_adjustment.rate_adjustment_threshold.max_value].count
@@ -83,5 +84,11 @@ class RateAdjustment < ApplicationRecord
   # HELPERS
   def self.percentage_value(value, rate_adjustment)
     value.to_f * rate_adjustment.value.to_f / 100
+  end
+
+  def ensure_items_is_array(items)
+    return items if items.is_a?(Array)
+
+    [items]
   end
 end
