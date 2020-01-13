@@ -65,7 +65,8 @@ Write an endpoint which will quote any customer with the expected price given n 
 
 
 # Solution
-### Index - get a list of customers and their storage_boxes NOT IMPLEMENTED
+
+### Index - get a list of customers and their storage_boxes
 ``` GET .../api/storage_boxes(.:format) ```
 ### Create a new customer
 ``` POST .../api/storage_boxes(.:format) ```
@@ -77,7 +78,7 @@ Write an endpoint which will quote any customer with the expected price given n 
 ## JSON Format
  * items with no id are new
  * items with id are updated
- * 'delete' => 'true' will remove an item from storage or delete a rate_adjustment
+ * 'delete' => 'true' will remove an item from storage or delete a pricing adjustment
 
 ```
 
@@ -136,12 +137,9 @@ Multiple adjustments can be added to the customer and/or individual item
 These are fees/disounts that can apply to all items, or to the overall rate being charged.
 Some Adjustments require a threshold.
 
-#### bulk_item_discount - min and max threshold are Required
-  * all items numbering between the min/max will be discounted the adustment value
-
 #### bulk_items_discount - min and max threshold are Required
-  * to add a discount to the first 100 items stored, use min=1, max=100
-  * to add a discount to the second 100 items stored, use min=101, max=200
+  * to add a discount to the first 100 items stored, use min=0, max=99
+  * to add a discount to the second 100 items stored, use min=100, max=199
 
 #### flat_discount
   * the value will be applied as a percentage discount to the entire rate.  Use this to give the customer 5% off their rate for a month.  Set the expiry date
@@ -154,6 +152,10 @@ Some Adjustments require a threshold.
 
 
 ### Adjustments that apply to specific items only
+These adjustments will only affect the item they are applied to.  These adjustments do not require
+any thresholds, so you could, for instance, add a heavy_item_fee to an item regardless of the item's
+weight, and it will be applied.
+
 #### heavy_item_fee
   * add this to a specific item known to be heavy, without having to add a specific weight.
   * this item will add a charge of the adjustment value

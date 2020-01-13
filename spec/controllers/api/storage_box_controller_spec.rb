@@ -49,6 +49,14 @@ describe Api::StorageBoxesController, type: :controller do
     }
   end
 
+  describe 'index' do
+    it 'returns an array of storage_boxes' do
+      FactoryBot.create_list(:storage_box, 5)
+      get :index, format: :json
+      expect(JSON.parse(response.body)['storage_boxes'].count).to eql(5)
+    end
+  end
+
   describe 'create' do
     it 'renders the view' do
       params['customer_id'] = customer.id

@@ -3,6 +3,10 @@
 # See documentation (README) for input/output format.
 # All methods will return the items and fees
 class Api::StorageBoxesController < Api::BaseController
+  def index
+    @storage_boxes = StorageBox.all
+  end
+
   def update
     @storage_box = StorageBox.find_by(params['id'])
     return render json: { error: "This storage box doesn't exist" }.to_json, status: 404 if @storage_box.blank?
